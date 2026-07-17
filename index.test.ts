@@ -21,6 +21,7 @@ import {
   deriveConversationKeyFromSessionId,
   derivePiSessionId,
   deterministicConversationId,
+  inferContextWindow,
   buildCursorRequest,
   parseMessages,
   setBridgeFactoryForTests,
@@ -561,6 +562,13 @@ describe("processModels", () => {
 });
 
 // ── resolveModelId ──
+
+describe("inferContextWindow", () => {
+  test("uses the Grok 4 window for Cursor-prefixed Grok models", () => {
+    expect(inferContextWindow("cursor-grok-4.5")).toBe(256_000);
+    expect(inferContextWindow("cursor-grok-4.5-high-fast")).toBe(256_000);
+  });
+});
 
 describe("resolveModelId", () => {
   test("no effort — returns model as-is", () => {

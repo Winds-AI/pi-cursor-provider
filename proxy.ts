@@ -779,7 +779,7 @@ export function inferContextWindow(id: string): number {
 
   // ── Grok ──────────────────────────────────────────────────────────────────
   // Grok 4 series: 256k.
-  if (lower.startsWith("grok-")) return 256_000;
+  if (lower.startsWith("grok-") || lower.startsWith("cursor-grok-")) return 256_000;
 
   // ── Kimi ──────────────────────────────────────────────────────────────────
   // Kimi K2.x: 262,144 tokens (256k).
