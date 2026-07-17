@@ -327,7 +327,7 @@ describe("reasoning support", () => {
       FALLBACK_MODELS.find((model) => model.id === "gpt-5.4-medium")?.reasoning,
     ).toBe(true);
     expect(
-      FALLBACK_MODELS.find((model) => model.id === "composer-2")?.reasoning,
+      FALLBACK_MODELS.find((model) => model.id === "composer-2.5")?.reasoning,
     ).toBe(true);
   });
 });
@@ -529,9 +529,9 @@ describe("processModels", () => {
     expect(result.length).toBeGreaterThan(20);
 
     // Spot checks
-    const composer2 = result.find((r) => r.id === "composer-2");
-    expect(composer2).toBeDefined();
-    expect(composer2!.supportsEffort).toBe(false);
+    const composer25 = result.find((r) => r.id === "composer-2.5");
+    expect(composer25).toBeDefined();
+    expect(composer25!.supportsEffort).toBe(false);
 
     const gpt54 = result.find((r) => r.id === "gpt-5.4");
     expect(gpt54).toBeDefined();
