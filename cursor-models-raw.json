@@ -798,6 +798,13 @@
     "maxTokens": 64000
   },
   {
+    "id": "grok-4-5",
+    "name": "Grok 4.5",
+    "reasoning": false,
+    "contextWindow": 200000,
+    "maxTokens": 64000
+  },
+  {
     "id": "grok-build-0.1",
     "name": "Grok Build 0.1",
     "reasoning": false,
