@@ -237,6 +237,8 @@ const MODEL_COST_TABLE: Record<string, ModelCost> = {
   "gpt-5.4-mini": { input: 0.75, output: 4.5, cacheRead: 0.075, cacheWrite: 0 },
   "gpt-5.4-nano": { input: 0.2, output: 1.25, cacheRead: 0.02, cacheWrite: 0 },
   "gpt-5.5": { input: 5, output: 30, cacheRead: 0.5, cacheWrite: 0 },
+  "cursor-grok-4.5": { input: 2, output: 6, cacheRead: 0.5, cacheWrite: 0 },
+  "cursor-grok-4.5-fast": { input: 4, output: 18, cacheRead: 1, cacheWrite: 0 },
   "grok-4.20": { input: 2, output: 6, cacheRead: 0.2, cacheWrite: 0 },
   "grok-4-3": { input: 1.25, output: 2.5, cacheRead: 0.2, cacheWrite: 0 },
   "grok-4.3": { input: 1.25, output: 2.5, cacheRead: 0.2, cacheWrite: 0 },
@@ -386,7 +388,7 @@ export function supportsReasoningModelId(id: string): boolean {
   const { base, effort, thinking } = parseModelId(id);
   if (effort || thinking) return true;
   if (base === "default") return true;
-  return /^(claude|composer|gemini|gpt|grok|kimi)(-|$)/i.test(base);
+  return /^(claude|composer|cursor-grok|gemini|gpt|grok|kimi)(-|$)/i.test(base);
 }
 
 /**

@@ -439,6 +439,27 @@ describe("processModels", () => {
     expect(result[0]!.effortMap!.medium).toBe("medium");
   });
 
+  test("Cursor Grok 4.5 variants map effort and speed correctly", () => {
+    const result = processModels([
+      m("cursor-grok-4.5-low", "Cursor Grok 4.5 Low"),
+      m("cursor-grok-4.5-medium", "Cursor Grok 4.5 Medium"),
+      m("cursor-grok-4.5-high", "Cursor Grok 4.5"),
+      m("cursor-grok-4.5-low-fast", "Cursor Grok 4.5 Low Fast"),
+      m("cursor-grok-4.5-medium-fast", "Cursor Grok 4.5 Medium Fast"),
+      m("cursor-grok-4.5-high-fast", "Cursor Grok 4.5 Fast"),
+    ]);
+
+    expect(result.map((model) => model.id)).toEqual([
+      "cursor-grok-4.5",
+      "cursor-grok-4.5-fast",
+    ]);
+    for (const model of result) {
+      expect(model.supportsEffort).toBe(true);
+      expect(model.effortMap).toMatchObject({ low: "low", medium: "medium", high: "high" });
+      expect(supportsReasoningModelId(model.id)).toBe(true);
+    }
+  });
+
   test("composer-2 — single model without effort, NOT deduped", () => {
     const result = processModels([m("composer-2")]);
     expect(result).toHaveLength(1);
@@ -518,6 +539,12 @@ describe("processModels", () => {
     const gpt55 = result.find((r) => r.id === "gpt-5.5");
     expect(gpt55).toBeDefined();
     expect(gpt55!.supportsEffort).toBe(true);
+
+    const grok45 = result.find((r) => r.id === "cursor-grok-4.5");
+    const grok45Fast = result.find((r) => r.id === "cursor-grok-4.5-fast");
+    expect(grok45?.supportsEffort).toBe(true);
+    expect(grok45Fast?.supportsEffort).toBe(true);
+    expect(supportsReasoningModelId(grok45!.id)).toBe(true);
 
     // Opus should be deduped too
     const opus46 = result.find((r) => r.id === "claude-4.6-opus");
