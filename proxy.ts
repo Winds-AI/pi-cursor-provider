@@ -942,8 +942,6 @@ export function resolveModelId(
   model: string,
   reasoningEffort?: string,
 ): string {
-  if (!reasoningEffort) return model;
-
   let suffix = "";
   let base = model;
   if (base.endsWith("-fast")) {
@@ -953,6 +951,15 @@ export function resolveModelId(
     suffix = "-thinking";
     base = base.slice(0, -9);
   }
+
+  // Cursor Auto ignores effort tiers; suffixes like default-medium error out.
+  if (base === "default") return model;
+
+  // Cursor Grok only exists as low/medium/high variants — default to medium.
+  if (!reasoningEffort && /^cursor-grok/i.test(base)) {
+    reasoningEffort = "medium";
+  }
+  if (!reasoningEffort) return model;
 
   return `${base}-${reasoningEffort}${suffix}`;
 }
