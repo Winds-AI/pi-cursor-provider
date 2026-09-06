@@ -387,7 +387,8 @@ interface ProcessedModel extends CursorModel {
 export function supportsReasoningModelId(id: string): boolean {
   const { base, effort, thinking } = parseModelId(id);
   if (effort || thinking) return true;
-  if (base === "default") return true;
+  // Cursor Auto picks the backend model itself; it has no reasoning-effort suffix.
+  if (base === "default") return false;
   return /^(claude|composer|cursor-grok|gemini|gpt|grok|kimi)(-|$)/i.test(base);
 }
 
@@ -426,6 +427,22 @@ export function buildEffortMap(efforts: Set<string>): Record<string, string> {
     medium: pick("medium", "", "low"),
     high: pick("high", "medium", ""),
     xhigh: pick("max", "xhigh", "high"),
+  };
+}
+
+/** Map pi thinking levels to Cursor effort suffixes for deduped models. */
+export function buildThinkingLevelMap(
+  effortMap: Record<string, string>,
+): Record<string, string> {
+  const fallback =
+    effortMap.medium ?? effortMap.low ?? effortMap.high ?? "medium";
+  return {
+    off: fallback,
+    minimal: effortMap.minimal ?? effortMap.low ?? fallback,
+    low: effortMap.low ?? fallback,
+    medium: effortMap.medium ?? fallback,
+    high: effortMap.high ?? fallback,
+    xhigh: effortMap.xhigh ?? effortMap.high ?? fallback,
   };
 }
 
@@ -493,10 +510,17 @@ export function processModels(raw: CursorModel[]): ProcessedModel[] {
 }
 
 function modelConfig(m: ProcessedModel) {
+  const reasoning = m.supportsEffort || supportsReasoningModelId(m.id);
+  const thinkingLevelMap =
+    m.supportsEffort && m.effortMap
+      ? buildThinkingLevelMap(m.effortMap)
+      : undefined;
+
   return {
     id: m.id,
     name: m.name,
-    reasoning: supportsReasoningModelId(m.id),
+    reasoning,
+    ...(thinkingLevelMap && { thinkingLevelMap }),
     input: ["text", "image"] as ("text" | "image")[],
     cost: estimateModelCost(m.id),
     contextWindow: inferContextWindow(m.id),
@@ -504,10 +528,6 @@ function modelConfig(m: ProcessedModel) {
     compat: {
       supportsDeveloperRole: false,
       supportsReasoningEffort: m.supportsEffort,
-      ...(m.supportsEffort &&
-        m.effortMap && {
-          reasoningEffortMap: m.effortMap,
-        }),
       maxTokensField: "max_tokens" as const,
     },
   };

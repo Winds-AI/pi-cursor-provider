@@ -4,6 +4,7 @@ import { EventEmitter } from "node:events";
 import { request as httpRequest } from "node:http";
 import {
   buildEffortMap,
+  buildThinkingLevelMap,
   FALLBACK_MODELS,
   parseModelId,
   processModels,
@@ -310,6 +311,20 @@ describe("buildEffortMap", () => {
   });
 });
 
+describe("buildThinkingLevelMap", () => {
+  test("maps pi thinking levels to cursor effort suffixes", () => {
+    const effortMap = buildEffortMap(new Set(["low", "medium", "high"]));
+    expect(buildThinkingLevelMap(effortMap)).toEqual({
+      off: "medium",
+      minimal: "low",
+      low: "low",
+      medium: "medium",
+      high: "high",
+      xhigh: "high",
+    });
+  });
+});
+
 // ── processModels ──
 
 describe("reasoning support", () => {
@@ -317,7 +332,9 @@ describe("reasoning support", () => {
     expect(supportsReasoningModelId("gpt-5.4")).toBe(true);
     expect(supportsReasoningModelId("gpt-5.4-fast")).toBe(true);
     expect(supportsReasoningModelId("composer-2")).toBe(true);
-    expect(supportsReasoningModelId("default")).toBe(true);
+    expect(supportsReasoningModelId("cursor-grok-4.5")).toBe(true);
+    expect(supportsReasoningModelId("cursor-grok-4.5-fast")).toBe(true);
+    expect(supportsReasoningModelId("default")).toBe(false);
     expect(supportsReasoningModelId("totally-unknown-model")).toBe(false);
   });
 
@@ -366,6 +383,26 @@ describe("processModels", () => {
     expect(result).toHaveLength(1);
     expect(result[0]!.id).toBe("gpt-5.4-fast");
     expect(result[0]!.supportsEffort).toBe(true);
+  });
+
+  test("cursor-grok-4.5 — deduped from low/medium/high variants", () => {
+    const result = processModels([
+      m("cursor-grok-4.5-low"),
+      m("cursor-grok-4.5-medium"),
+      m("cursor-grok-4.5-high"),
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.id).toBe("cursor-grok-4.5");
+    expect(result[0]!.supportsEffort).toBe(true);
+    expect(supportsReasoningModelId(result[0]!.id)).toBe(true);
+    expect(buildThinkingLevelMap(result[0]!.effortMap!)).toEqual({
+      off: "medium",
+      minimal: "low",
+      low: "low",
+      medium: "medium",
+      high: "high",
+      xhigh: "high",
+    });
   });
 
   test("gpt-5.2 — deduped from default + effort variants", () => {
@@ -575,6 +612,22 @@ describe("resolveModelId", () => {
     expect(resolveModelId("composer-2")).toBe("composer-2");
     expect(resolveModelId("composer-2", undefined)).toBe("composer-2");
     expect(resolveModelId("composer-2", "")).toBe("composer-2");
+  });
+
+  test("default model ignores reasoning effort", () => {
+    expect(resolveModelId("default")).toBe("default");
+    expect(resolveModelId("default", "medium")).toBe("default");
+    expect(resolveModelId("default", "high")).toBe("default");
+  });
+
+  test("cursor-grok defaults to medium when no effort provided", () => {
+    expect(resolveModelId("cursor-grok-4.5")).toBe("cursor-grok-4.5-medium");
+    expect(resolveModelId("cursor-grok-4.5-fast")).toBe(
+      "cursor-grok-4.5-medium-fast",
+    );
+    expect(resolveModelId("cursor-grok-4.5", "high")).toBe(
+      "cursor-grok-4.5-high",
+    );
   });
 
   test("plain model + effort", () => {
