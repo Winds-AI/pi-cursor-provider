@@ -251,22 +251,26 @@ describe("buildEffortMap", () => {
       new Set(["none", "low", "medium", "high", "xhigh"]),
     );
     expect(map).toEqual({
+      off: "none",
       minimal: "none",
       low: "low",
       medium: "medium",
       high: "high",
       xhigh: "xhigh",
+      max: null,
     });
   });
 
   test("with default (empty) and medium", () => {
     const map = buildEffortMap(new Set(["", "low", "medium", "high"]));
     expect(map).toEqual({
+      off: "",
       minimal: "low",
       low: "low",
       medium: "medium",
       high: "high",
       xhigh: "high",
+      max: null,
     });
   });
 
@@ -278,11 +282,13 @@ describe("buildEffortMap", () => {
   test("high+max only — all lower levels clamp to high", () => {
     const map = buildEffortMap(new Set(["high", "max"]));
     expect(map).toEqual({
+      off: null,
       minimal: "high",
       low: "high",
       medium: "high",
       high: "high",
       xhigh: "max",
+      max: "max",
     });
   });
 
@@ -291,22 +297,26 @@ describe("buildEffortMap", () => {
       new Set(["none", "low", "medium", "high", "max"]),
     );
     expect(map).toEqual({
+      off: "none",
       minimal: "none",
       low: "low",
       medium: "medium",
       high: "high",
       xhigh: "max",
+      max: "max",
     });
   });
 
   test("low+high — medium falls back to low", () => {
     const map = buildEffortMap(new Set(["low", "high"]));
     expect(map).toEqual({
+      off: null,
       minimal: "low",
       low: "low",
       medium: "low",
       high: "high",
       xhigh: "high",
+      max: null,
     });
   });
 });
@@ -315,12 +325,13 @@ describe("buildThinkingLevelMap", () => {
   test("maps pi thinking levels to cursor effort suffixes", () => {
     const effortMap = buildEffortMap(new Set(["low", "medium", "high"]));
     expect(buildThinkingLevelMap(effortMap)).toEqual({
-      off: "medium",
+      off: null,
       minimal: "low",
       low: "low",
       medium: "medium",
       high: "high",
       xhigh: "high",
+      max: null,
     });
   });
 });
@@ -396,12 +407,13 @@ describe("processModels", () => {
     expect(result[0]!.supportsEffort).toBe(true);
     expect(supportsReasoningModelId(result[0]!.id)).toBe(true);
     expect(buildThinkingLevelMap(result[0]!.effortMap!)).toEqual({
-      off: "medium",
+      off: null,
       minimal: "low",
       low: "low",
       medium: "medium",
       high: "high",
       xhigh: "high",
+      max: null,
     });
   });
 
@@ -578,11 +590,11 @@ describe("processModels", () => {
     expect(gpt55).toBeDefined();
     expect(gpt55!.supportsEffort).toBe(true);
 
-    const grok45 = result.find((r) => r.id === "cursor-grok-4.5");
-    const grok45Fast = result.find((r) => r.id === "cursor-grok-4.5-fast");
-    expect(grok45?.supportsEffort).toBe(true);
-    expect(grok45Fast?.supportsEffort).toBe(true);
-    expect(supportsReasoningModelId(grok45!.id)).toBe(true);
+    const grok46 = result.find((r) => r.id === "cursor-grok-4.6");
+    const grok46Fast = result.find((r) => r.id === "cursor-grok-4.6-fast");
+    expect(grok46?.supportsEffort).toBe(true);
+    expect(grok46Fast?.supportsEffort).toBe(true);
+    expect(supportsReasoningModelId(grok46!.id)).toBe(true);
 
     // Opus should be deduped too
     const opus46 = result.find((r) => r.id === "claude-4.6-opus");
@@ -1543,6 +1555,7 @@ function makeMcpExecMessage(
 }
 
 async function postChatCompletion(port: number, body: Record<string, unknown>) {
+  const { getProxyAuthToken } = await import("./proxy.ts");
   return new Promise<{ statusCode: number; body: string }>(
     (resolve, reject) => {
       const req = httpRequest(
@@ -1551,7 +1564,10 @@ async function postChatCompletion(port: number, body: Record<string, unknown>) {
           port,
           path: "/v1/chat/completions",
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getProxyAuthToken()}`,
+          },
         },
         (res) => {
           let data = "";
@@ -2389,6 +2405,7 @@ describe("process exit safety (pi -p)", () => {
 
     const port = await startProxy(async () => "test-token");
 
+    const { getProxyAuthToken } = await import("./proxy.ts");
     const result = await new Promise<{
       connectionHeader: string | undefined;
       socketDestroyed: boolean;
@@ -2399,7 +2416,10 @@ describe("process exit safety (pi -p)", () => {
           port,
           path: "/v1/chat/completions",
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getProxyAuthToken()}`,
+          },
         },
         (res) => {
           const connectionHeader = res.headers["connection"] as
